@@ -10,6 +10,10 @@ var connection = mysql.createConnection({
     database: "employeeDB"
 });
 
+connection.connect(function (err) {
+    if (err) throw err;
+});
+
 init();
 
 function init() {
@@ -18,7 +22,7 @@ function init() {
             type: "list",
             message: "What would you like to do?",
             choices: ["View all employees", "View employees by department", "View employees by role",
-                "Add department", "Add role", "Add employee", "Exit"],
+                "Add department", "Add role", "Add employee", "Change employee role", "Exit"],
             name: "choice"
         }
     ]).then(({ choice }) => {
@@ -39,6 +43,9 @@ function init() {
         }
         else if (choice == "Add employee") {
             addEmployee();
+        }
+        else if (choice == "Change employee role") {
+            changeRole();
         } else {
             connection.end();
         }
@@ -220,6 +227,69 @@ function addEmployee() {
                         init();
                     }
 
+                );
+            });
+        });
+
+    });
+}
+
+function changeRole() {
+    let roleList = [];
+    let employeeList = [];
+    let employeeListName = "";
+    connection.query("SELECT * FROM role", function (err, role) {
+        if (err) throw err;
+        role.forEach(role => {
+            roleList.push(role.title);
+        });
+        connection.query("SELECT * FROM employee", function (err, employee) {
+            if (err) throw err;
+            employee.forEach(employee => {
+                employeeListName = employee.firstName + " " + employee.lastName;
+                employeeList.push(employeeListName);
+            });
+            inquirer.prompt([
+                {
+                    type: "list",
+                    message: "Which employee would you like to change the role of?",
+                    choices: employeeList,
+                    name: "userEmployee"
+                },
+                {
+                    type: "list",
+                    message: "What role would you like to change it to?",
+                    choices: roleList,
+                    name: "userRole"
+                }
+            ]).then(answers => {
+                let userRoleID;
+                let userEmployeeID;
+                role.forEach(role => {
+                    if (answers.userRole === role.title) {
+                        userRoleID = role.id;
+                    }
+                });
+                let userEmployeeArr = answers.userEmployee.split(" ");
+                employee.forEach(employee => {
+                    if (userEmployeeArr[0] === employee.firstName && userEmployeeArr[1] === employee.lastName) {
+                        userEmployeeID = employee.id;
+                    }
+                });
+                connection.query(
+                    "UPDATE employee SET ? WHERE ?",
+                    [
+                      {
+                        roleID: userRoleID
+                      },
+                      {
+                        id: userEmployeeID
+                      }
+                    ],
+                    function(err, res) {
+                      if (err) throw err;
+                      init();
+                    }
                 );
             });
         });
