@@ -2,18 +2,21 @@ const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
+//Connection settings
 var connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
     user: "root",
-    password: "",
+    password: "",  //Input password before using application
     database: "employeeDB"
 });
 
+//Establish connection
 connection.connect(function (err) {
     if (err) throw err;
 });
 
+//Kickoff application
 init();
 
 function init() {
@@ -52,6 +55,7 @@ function init() {
     });
 }
 
+//Query all employees in DB
 function showAll() {
     connection.query(
     `SELECT e.id, e.firstName, e.lastName, department.name department, title, salary, m.firstName managerFirstName, m.lastName managerLastName
@@ -66,6 +70,7 @@ function showAll() {
 
 }
 
+//Query all employees and order by dept
 function showAllByDept() {
     connection.query(
     `SELECT e.id, e.firstName, e.lastName, department.name department, title, salary, m.firstName managerFirstName, m.lastName managerLastName
@@ -80,6 +85,7 @@ function showAllByDept() {
     });
 }
 
+//Query all employees and order by role
 function showAllByRole() {
     connection.query(
     `SELECT e.id, e.firstName, e.lastName, department.name department, title, salary, m.firstName managerFirstName, m.lastName managerLastName
@@ -94,6 +100,7 @@ function showAllByRole() {
     });
 }
 
+//Add department record to DB
 function addDept() {
     inquirer.prompt([
         {
@@ -115,10 +122,12 @@ function addDept() {
     });
 }
 
+//Add role record to DB
 function addRole() {
     connection.query("SELECT * FROM department", function (err, res) {
         if (err) throw err;
         let deptChoices = [];
+        //Get list of departments
         res.forEach(dept => {
             deptChoices.push(dept.name);
         });
@@ -141,11 +150,13 @@ function addRole() {
             }
         ]).then(answers => {
             let deptID;
+            //Find user specified dept
             res.forEach(dept => {
                 if (dept.name == answers.userDept) {
                     deptID = dept.id;
                 }
             });
+            //Insert dept record into DB
             connection.query(
                 "INSERT INTO role SET ?",
                 {
@@ -162,15 +173,18 @@ function addRole() {
     });
 }
 
+//Add employee record to DB
 function addEmployee() {
     let roleList = [];
     let employeeList = [];
     let employeeListName = "";
+    //Get list of roles
     connection.query("SELECT * FROM role", function (err, role) {
         if (err) throw err;
         role.forEach(role => {
             roleList.push(role.title);
         });
+        //Get list of employees to select a manager from
         connection.query("SELECT * FROM employee", function (err, employee) {
             if (err) throw err;
             employee.forEach(employee => {
@@ -203,17 +217,20 @@ function addEmployee() {
             ]).then(answers => {
                 let userRoleID;
                 let userManagerID;
+                //Match user selected role
                 role.forEach(role => {
                     if (answers.userRole === role.title) {
                         userRoleID = role.id;
                     }
                 });
+                //Match user selected manager
                 let userManagerArr = answers.userManager.split(" ");
                 employee.forEach(employee => {
                     if (userManagerArr[0] === employee.firstName && userManagerArr[1] === employee.lastName) {
                         userManagerID = employee.id;
                     }
                 });
+                //Insert employee record into DB
                 connection.query(
                     "INSERT INTO employee SET ?",
                     {
@@ -238,11 +255,13 @@ function changeRole() {
     let roleList = [];
     let employeeList = [];
     let employeeListName = "";
+    //Get list of roles
     connection.query("SELECT * FROM role", function (err, role) {
         if (err) throw err;
         role.forEach(role => {
             roleList.push(role.title);
         });
+        //Get list of employees
         connection.query("SELECT * FROM employee", function (err, employee) {
             if (err) throw err;
             employee.forEach(employee => {
@@ -265,17 +284,20 @@ function changeRole() {
             ]).then(answers => {
                 let userRoleID;
                 let userEmployeeID;
+                //Match user selected role
                 role.forEach(role => {
                     if (answers.userRole === role.title) {
                         userRoleID = role.id;
                     }
                 });
+                //Match user selected employee
                 let userEmployeeArr = answers.userEmployee.split(" ");
                 employee.forEach(employee => {
                     if (userEmployeeArr[0] === employee.firstName && userEmployeeArr[1] === employee.lastName) {
                         userEmployeeID = employee.id;
                     }
                 });
+                //Insert updated employee role record
                 connection.query(
                     "UPDATE employee SET ? WHERE ?",
                     [
